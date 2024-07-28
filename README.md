@@ -66,7 +66,7 @@ your machine without Docker.
     After a `poetry install`, execute the following to setup raw data in your 
     postgres instance. Make sure to populate the connection creds in the `.env`.
     ```bash
-    
+    docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres
     ```
 
 ### How to run
@@ -82,12 +82,52 @@ Expecting that above installation process, suceeded.
     ```
 + Database
     ```bash
-    
+    docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres
     ```
 
 ## About Solution
+The solution, as expected and listed down in the doc, contains a UI, an API, and a database.
+For UI, I opted for Next.js (because I knew it the best). API is writen with FastAPI, because
+it is really fast both post deployment, and while writing code. System Performance is my 
+foremost priority, only to be followed by developer productivity. 
+
 ### Solution Overview
+The solution is pretty simple, I'll jot down a few bullets about the solution - 
+* The UI just makes HTTP calls to the REST API and visualizes the AST using `react-d3-tree`.
+* The backend parses the raw string by first tokenizing using `tokenizer()`. We have a specified
+  regex to look for lexems during the tokenization process. Then it parses the stream of tokens 
+  using a `Parser` object. This outputs a AST node. 
+* We store this AST in database by serializing it to JSON, and storing the JSON. ALthough there 
+  could be efficient ways to store in the database, like hashing the Node object and storing it
+  in a KV store, with hash : Node object storage. This way we can traverse the tree for changes, and 
+  save only the nodes which went through a change. We can have dynamic pointers associated with each Node
+  so that we can optimize for space too. Like two trees having same condition, will be stored only once.
+  But a pointer and an associated entry will be made in a table. This abstraction can save space while 
+  still maintaining object isolation (for data security). Something similar to how Dropbox stores files
+  on its servers.
+
 ### Code Structure
+This section will talk about files, and what they do. 
++ Backend
+    file_path       | description
+    ----------------|-----------------------
+    main.py         | Entrypoint of the server
+    poetry.lock     | Dependencies for the server, managed by poetry
+    pyproject.toml  | Py Project Metadata
+    rule_engine/ast_utils.py | Contains Class definitions and Utility functions around the AST like Node, etc
+    rule_engine/database.py | ORM and Functions to read/write through database
+    rule_engine/main.py | Entrypoint to the API, contains API contracts
+    rule_engine/models.py | DB Table Schema
+    rule_engine/parser_utils.py | Parser and Tokenizer definitions and utilities
+
++ Frontend
+    file_path       | description
+    ----------------|-----------------------
+    app/            | Source Code of the App
+    app/components/ASTTree.tsx | Component to visualize AST
+    app/services/api.ts | Middleware/Utility to connect to REST API
+    app/page.tsx | Entrypoint to the UI, renders the main pageV
+
 ### Design Discussion
 Low-level design of classes:
 
@@ -248,9 +288,32 @@ Class Parser:
 ```
 
 ## Non Technical Parts
+The technical parts have been discussed in these docs, and the code also describes it
+so I wanted to give some space to talk about the non-technical stuff, although it relates
+to everything technical only, but it's more about how I approached the solution rather than
+the solution itself.
+
 ### My Approach
+My Approach was pretty simple. 
++ The first thing I did was read the assignment deeply to understand what exactly it 
+  was asking us to implement. 
++ My second step was to do some literature reading about most frequent operator heuristic,
+  and understood what it meant.
++ This work was very similar to how parsers work in compilers. Having worked with `lex` and `bison`
+  before during my coursework, I could easily decipher how I should appraoch this problem.
++ So I drew an AST, and udnerstood the components, each Node, a Logical Operator, all binary operators,
+  and Conditions, etc. So, I created class definitions for all of them, and identified the relationship
+  between them.
++ My next task was very simple, create a parser for it, and devise an algorithm to traverse the tree.
++ Traversing the tree would enable 3 things - creation from string, evaluating a condition, and storing
+  the tree. 
++ After I wrote code for it, it became a pretty straight forward task.
+
 ### Feedback
+So, honestly this was a good question. Had to use my knowledge of compilers, algorithmic knowledge
+and software engineering principles. It hit all 3 important pillars, academics, DSA and Dev. 
+It felt great to do this assignment, I also got to learn a lot about the heuristics in this space,
+and I am thankful for it. 
 
 ## Outro
-
 Thanks.

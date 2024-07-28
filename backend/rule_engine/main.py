@@ -7,6 +7,7 @@ This module provides API endpoints for creating, combining, and evaluating rules
 import json
 from typing import Dict, List
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from rule_engine import models, database
@@ -43,7 +44,7 @@ def get_db():
     Yields:
         Session: SQLAlchemy database session.
     """
-    db = database.SessionLocal()
+    db = models.SessionLocal()
     try:
         yield db
     finally:
@@ -67,7 +68,7 @@ def create_rule(rule_string: RuleString, db: Session = Depends(get_db)):
         root = parser.parse()
         ast_json = root_to_json(root)
         database.create_rule(db, rule_string.name, ast_json)
-        return root
+        return JSONResponse(ast_json)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -96,7 +97,7 @@ def combine_rules(rule_list: RuleList):
                 right=root,
                 value=ANDOperator()
             )
-    return combined_root
+    return JSONResponse(root_to_json(combined_root))
 
 @app.post("/evaluate_rule")
 def evaluate_rule(request: EvaluateRequest, db: Session = Depends(get_db)):

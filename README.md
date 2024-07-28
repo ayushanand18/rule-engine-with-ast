@@ -44,7 +44,7 @@ your machine without Docker.
 + Frontend
     ```bash
     cd frontend/
-    pnpm install
+    npm install
     ```
 + Backend
 
@@ -66,7 +66,7 @@ your machine without Docker.
     After a `poetry install`, execute the following to setup raw data in your 
     postgres instance. Make sure to populate the connection creds in the `.env`.
     ```bash
-    poetry run python main.py --migrate
+    
     ```
 
 ### How to run
@@ -74,7 +74,7 @@ Expecting that above installation process, suceeded.
 
 + Frontend
     ```bash
-    pnpm run dev
+    npm run dev
     ```
 + Backend
     ```bash
@@ -82,13 +82,170 @@ Expecting that above installation process, suceeded.
     ```
 + Database
     ```bash
-    poetry run python main.py --db-start
+    
     ```
 
 ## About Solution
 ### Solution Overview
 ### Code Structure
 ### Design Discussion
+Low-level design of classes:
+
+```java
+Class Node:
+    Attribute node_type: String  // "operand" or "operator"
+    Attribute left: Node
+    Attribute right: Node
+    Attribute value: Condition or Operator
+
+Class Operator:
+    Method evaluate(left: Node, right: Node) -> Boolean
+
+Class ANDOperator inherits Operator:
+    Method evaluate(left: Node, right: Node) -> Boolean:
+        return left.value.evaluate() AND right.value.evaluate()
+
+Class OROperator inherits Operator:
+    Method evaluate(left: Node, right: Node) -> Boolean:
+        return left.value.evaluate() OR right.value.evaluate()
+
+Generic Type T
+Class Condition<T>:
+    Attribute lvariable: String
+    Attribute rvalue: T
+    Attribute comparison_type: String  // "gt", "lt", "eq", "lteq", "gteq", "neq"
+
+    Method evaluate(input_value: T) -> Boolean:
+        If comparison_type == "gt":
+            return input_value > rvalue
+        If comparison_type == "lt":
+            return input_value < rvalue
+        If comparison_type == "eq":
+            return input_value == rvalue
+        If comparison_type == "lteq":
+            return input_value <= rvalue
+        If comparison_type == "gteq":
+            return input_value >= rvalue
+        If comparison_type == "neq":
+            return input_value != rvalue
+
+Class AST:
+    Attribute root: Node
+
+    Method evaluate_rule(json_data: Dictionary) -> Boolean:
+        return _evaluate_node(root, json_data)
+
+    Method _evaluate_node(node: Node, data: Dictionary) -> Boolean:
+        If node.node_type == "operand":
+            return node.value.evaluate(data[node.value.lvariable])
+        If node.node_type == "operator":
+            return node.value.evaluate(node.left, node.right)
+
+    Method create_rule(rule: String) -> Boolean:
+        tokens = tokenize(rule)
+        parser = Parser(tokens)
+        root = parser.parse()
+        return True
+
+    Function combine_rules(rules: List<String>) -> Boolean:
+      // Step 1: Parse each rule into its AST form
+      Attribute asts: List<Node> = []
+      For each rule in rules:
+          tokens = tokenize(rule)
+          parser = Parser(tokens)
+          asts.append(parser.parse())
+      
+      // Step 2: Determine the most frequent operator
+      Attribute operator_count: Dictionary<String, Integer> = {'AND': 0, 'OR': 0}
+      For each rule in rules:
+          operator_count['AND'] += count_occurrences(rule, 'AND')
+          operator_count['OR'] += count_occurrences(rule, 'OR')
+      
+      Attribute most_frequent_operator: String
+      If operator_count['AND'] >= operator_count['OR']:
+          most_frequent_operator = 'AND'
+      Else:
+          most_frequent_operator = 'OR'
+      
+      Attribute operator_class: Class
+      If most_frequent_operator == 'AND':
+          operator_class = ANDOperator
+      Else:
+          operator_class = OROperator
+      
+      // Step 3: Combine all ASTs using the most frequent operator
+      While length(asts) > 1:
+          left_ast = asts.pop(0)
+          right_ast = asts.pop(0)
+          combined_ast = Node(
+              node_type="operator",
+              left=left_ast,
+              right=right_ast,
+              value=operator_class()
+          )
+          asts.append(combined_ast)
+      
+      root = asts[0]
+      Return True
+
+```
+
+Parser and Tokenizer
+```java
+Function tokenize(rule: String) -> List<String]:
+    token_pattern = compile_regex('\s*(=>|<=|>=|&&|\|\||[()=><!]|[\w]+)\s*')
+    Return [token for token in find_all(token_pattern, rule) if token.strip()]
+
+Class Parser:
+    Attribute tokens: List<String>
+    Attribute pos: Integer
+
+    Constructor(tokens: List<String>):
+        tokens = tokens
+        pos = 0
+
+    Method parse() -> Node:
+        If tokens is empty:
+            Raise ValueError("Empty tokens list")
+        Return parse_expression()
+
+    Method parse_expression() -> Node:
+        node = parse_term()
+        While pos < length(tokens) AND tokens[pos] in ('AND', 'OR'):
+            operator = tokens[pos]
+            pos += 1
+            right = parse_term()
+            If operator == 'AND':
+                node = Node("operator", left=node, right=right, value=ANDOperator())
+            Else If operator == 'OR':
+                node = Node("operator", left=node, right=right, value=OROperator())
+        Return node
+
+    Method parse_term() -> Node:
+        If tokens[pos] == '(':
+            pos += 1
+            node = parse_expression()
+            pos += 1  // skip ')'
+            Return node
+        Else:
+            Return parse_condition()
+
+    Method parse_condition() -> Node:
+        lvariable = tokens[pos]
+        pos += 1
+        comparison_type = tokens[pos]
+        pos += 1
+        rvalue = tokens[pos]
+        pos += 1
+        If is_digit(rvalue):
+            rvalue = to_integer(rvalue)
+        Else If is_float(rvalue):
+            rvalue = to_float(rvalue)
+        Else:
+            rvalue = strip_quotes(rvalue)
+        condition = Condition(lvariable, rvalue, comparison_type)
+        Return Node("operand", value=condition)
+```
 
 ## Non Technical Parts
 ### My Approach

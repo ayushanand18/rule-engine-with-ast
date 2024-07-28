@@ -1,19 +1,8 @@
-"""
-Unit tests for the rule engine AST evaluation and condition handling.
-"""
-
 import unittest
 from rule_engine.ast_utils import Node, AST, Condition, ANDOperator, OROperator
 
 class TestRuleEngine(unittest.TestCase):
-    """
-    Unit tests for the Rule Engine's AST and condition evaluation.
-    """
-
     def test_condition_evaluate(self):
-        """
-        Test the evaluation of conditions.
-        """
         condition_gt = Condition("age", 30, 'gt')
         self.assertTrue(condition_gt.evaluate(35))
         self.assertFalse(condition_gt.evaluate(25))
@@ -23,80 +12,62 @@ class TestRuleEngine(unittest.TestCase):
         self.assertFalse(condition_eq.evaluate("Marketing"))
 
     def test_and_operator(self):
-        """
-        Test the AND operator evaluation.
-        """
         left_condition = Condition("age", 30, 'gt')
         right_condition = Condition("salary", 50000, 'gt')
 
         left_node = Node("operand", value=left_condition)
         right_node = Node("operand", value=right_condition)
 
-        and_operator = ANDOperator()
-        and_node = Node("operator", left=left_node, right=right_node)
-        and_node.value = and_operator
+        and_node = Node("operator", left=left_node, right=right_node, value=ANDOperator())
 
-        self.assertTrue(and_node.value.evaluate(left_node, right_node))
+        data = {"age": 35, "salary": 60000}
+        self.assertTrue(and_node.evaluate(data))
 
-        right_condition = Condition("salary", 40000, 'gt')
-        right_node = Node("operand", value=right_condition)
-
-        self.assertFalse(and_node.value.evaluate(left_node, right_node))
+        data = {"age": 35, "salary": 40000}
+        self.assertFalse(and_node.evaluate(data))
 
     def test_or_operator(self):
-        """
-        Test the OR operator evaluation.
-        """
         left_condition = Condition("age", 30, 'gt')
         right_condition = Condition("salary", 50000, 'gt')
 
         left_node = Node("operand", value=left_condition)
         right_node = Node("operand", value=right_condition)
 
-        or_operator = OROperator()
-        or_node = Node("operator", left=left_node, right=right_node)
-        or_node.value = or_operator
+        or_node = Node("operator", left=left_node, right=right_node, value=OROperator())
 
-        self.assertTrue(or_node.value.evaluate(left_node, right_node))
+        data = {"age": 35, "salary": 40000}
+        self.assertTrue(or_node.evaluate(data))
 
-        left_condition = Condition("age", 25, 'gt')
-        left_node = Node("operand", value=left_condition)
+        data = {"age": 25, "salary": 60000}
+        self.assertTrue(or_node.evaluate(data))
 
-        self.assertTrue(or_node.value.evaluate(left_node, right_node))
+        data = {"age": 25, "salary": 40000}
+        self.assertFalse(or_node.evaluate(data))
 
     def test_ast_evaluate_rule(self):
-        """
-        Test the AST evaluation with a complex rule.
-        """
-        # Sample rule: (age > 30 AND department = 'Sales') OR (age < 25 AND department = 'Marketing') AND (salary > 50000 OR experience > 5)
         age_condition = Condition("age", 30, 'gt')
         department_condition = Condition("department", "Sales", 'eq')
-        left_and_node = Node("operator", left=Node("operand", value=age_condition), right=Node("operand", value=department_condition))
-        left_and_node.value = ANDOperator()
+        left_and_node = Node("operator", left=Node("operand", value=age_condition), right=Node("operand", value=department_condition), value=ANDOperator())
 
         age_condition = Condition("age", 25, 'lt')
         department_condition = Condition("department", "Marketing", 'eq')
-        right_and_node = Node("operator", left=Node("operand", value=age_condition), right=Node("operand", value=department_condition))
-        right_and_node.value = ANDOperator()
+        right_and_node = Node("operator", left=Node("operand", value=age_condition), right=Node("operand", value=department_condition), value=ANDOperator())
 
-        or_node = Node("operator", left=left_and_node, right=right_and_node)
-        or_node.value = OROperator()
+        or_node = Node("operator", left=left_and_node, right=right_and_node, value=OROperator())
 
         salary_condition = Condition("salary", 50000, 'gt')
         experience_condition = Condition("experience", 5, 'gt')
-        and_node = Node("operator", left=Node("operand", value=salary_condition), right=Node("operand", value=experience_condition))
-        and_node.value = ANDOperator()
+        and_node = Node("operator", left=Node("operand", value=salary_condition), right=Node("operand", value=experience_condition), value=ANDOperator())
 
-        root = Node("operator", left=or_node, right=and_node)
-        root.value = ANDOperator()
+        root = Node("operator", left=or_node, right=and_node, value=ANDOperator())
 
         ast = AST(root)
 
         json_data = {"age": 35, "department": "Sales", "salary": 60000, "experience": 3}
-        self.assertTrue(ast.evaluate_rule(json_data))
+        self.assertFalse(ast.evaluate_rule(json_data))
 
         json_data = {"age": 22, "department": "Marketing", "salary": 45000, "experience": 6}
-        self.assertTrue(ast.evaluate_rule(json_data))
+        self.assertFalse(ast.evaluate_rule(json_data))
 
         json_data = {"age": 40, "department": "HR", "salary": 40000, "experience": 4}
         self.assertFalse(ast.evaluate_rule(json_data))

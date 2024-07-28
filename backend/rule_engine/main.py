@@ -1,9 +1,11 @@
+import json
+from typing import Dict, List
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from rule_engine import models, database
 from rule_engine.parser_utils import Parser, tokenize
-from rule_engine.ast_utils import Node, AST
+from rule_engine.ast_utils import ANDOperator, Condition, Node, AST, OROperator
 
 app = FastAPI()
 

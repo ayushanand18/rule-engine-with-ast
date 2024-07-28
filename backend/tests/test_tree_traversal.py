@@ -1,8 +1,19 @@
+"""
+Unit tests for the rule engine AST evaluation and condition handling.
+"""
+
 import unittest
+from rule_engine.ast_utils import Node, AST, Condition, ANDOperator, OROperator
 
 class TestRuleEngine(unittest.TestCase):
+    """
+    Unit tests for the Rule Engine's AST and condition evaluation.
+    """
 
     def test_condition_evaluate(self):
+        """
+        Test the evaluation of conditions.
+        """
         condition_gt = Condition("age", 30, 'gt')
         self.assertTrue(condition_gt.evaluate(35))
         self.assertFalse(condition_gt.evaluate(25))
@@ -12,6 +23,9 @@ class TestRuleEngine(unittest.TestCase):
         self.assertFalse(condition_eq.evaluate("Marketing"))
 
     def test_and_operator(self):
+        """
+        Test the AND operator evaluation.
+        """
         left_condition = Condition("age", 30, 'gt')
         right_condition = Condition("salary", 50000, 'gt')
 
@@ -30,6 +44,9 @@ class TestRuleEngine(unittest.TestCase):
         self.assertFalse(and_node.value.evaluate(left_node, right_node))
 
     def test_or_operator(self):
+        """
+        Test the OR operator evaluation.
+        """
         left_condition = Condition("age", 30, 'gt')
         right_condition = Condition("salary", 50000, 'gt')
 
@@ -48,6 +65,9 @@ class TestRuleEngine(unittest.TestCase):
         self.assertTrue(or_node.value.evaluate(left_node, right_node))
 
     def test_ast_evaluate_rule(self):
+        """
+        Test the AST evaluation with a complex rule.
+        """
         # Sample rule: (age > 30 AND department = 'Sales') OR (age < 25 AND department = 'Marketing') AND (salary > 50000 OR experience > 5)
         age_condition = Condition("age", 30, 'gt')
         department_condition = Condition("department", "Sales", 'eq')

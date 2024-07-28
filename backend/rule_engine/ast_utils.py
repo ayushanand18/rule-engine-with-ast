@@ -8,7 +8,7 @@ multiple rules into a single AST.
 
 from typing import List, Literal, TypeVar, Generic
 from abc import ABC, abstractmethod
-from rule_engine.parser_utils import tokenize, Parser
+
 
 T = TypeVar('T')
 
@@ -162,6 +162,8 @@ class AST:
         Returns:
             bool: True if the rule was created successfully.
         """
+        from rule_engine.parser_utils import tokenize, Parser
+
         tokens = tokenize(rule)
         parser = Parser(tokens)
         self.root = parser.parse()
@@ -177,6 +179,8 @@ class AST:
         Returns:
             bool: True if the rules were combined successfully.
         """
+        from rule_engine.parser_utils import tokenize, Parser
+        
         # Parse each rule into its AST form
         asts = []
         for rule in rules:

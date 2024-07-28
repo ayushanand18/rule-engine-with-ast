@@ -20,7 +20,7 @@ def _run_tests():
     runner.run(suite_parser)
     runner.run(suite_tree)
 
-def _run_dev_api_server(host: str, port: int):
+def _run_dev_api_server(host = None, port = None):
     """Run a dev instance of the FastAPI server."""
     if not host:
         host = "0.0.0.0"
@@ -28,7 +28,7 @@ def _run_dev_api_server(host: str, port: int):
     if not port:
         port = 5000
 
-    uvicorn.run('rules_engine.main:app', host=host, port=port, reload=True)
+    uvicorn.run('rule_engine.main:app', host=host, port=port, reload=True)
 
 def _run_db_migrate():
     """Instantiate Postgres DB with schema, and empty tables."""

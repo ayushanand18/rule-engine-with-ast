@@ -5,9 +5,12 @@ This module defines the Rule model and sets up the database connection.
 """
 
 import os
+from dotenv import load_dotenv
 from sqlalchemy import Column, Integer, String, Text, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
+load_dotenv()
 
 # Database URL from environment variables
 DATABASE_URL = (

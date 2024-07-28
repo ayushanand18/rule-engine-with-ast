@@ -64,5 +64,33 @@ class AST:
         return True
 
     def combine_rules(self, rules: List[str]) -> bool:
-        # Implementation for combining multiple rules into one AST
-        pass
+        # Parse each rule into its AST form
+        asts = []
+        for rule in rules:
+            tokens = tokenize(rule)
+            parser = Parser(tokens)
+            asts.append(parser.parse())
+        
+        # Determine the most frequent operator to use as the root
+        operator_count = {'AND': 0, 'OR': 0}
+        for rule in rules:
+            operator_count['AND'] += rule.count('AND')
+            operator_count['OR'] += rule.count('OR')
+        
+        most_frequent_operator = 'AND' if operator_count['AND'] >= operator_count['OR'] else 'OR'
+        operator_class = ANDOperator if most_frequent_operator == 'AND' else OROperator
+        
+        # Combine all ASTs into one using the most frequent operator
+        while len(asts) > 1:
+            left_ast = asts.pop(0)
+            right_ast = asts.pop(0)
+            combined_ast = Node(
+                node_type="operator",
+                left=left_ast,
+                right=right_ast,
+                value=operator_class()
+            )
+            asts.append(combined_ast)
+        
+        self.root = asts[0]
+        return True
